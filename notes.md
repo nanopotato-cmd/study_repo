@@ -10,3 +10,8 @@
 ```javascript
 // Пример кода
 console.log("Hello, Git!");
+```
+
+```bash
+git status
+```
