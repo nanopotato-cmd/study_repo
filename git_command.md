@@ -5,7 +5,12 @@
 ### Настройка
 
 ```bash
-#Установим имя и почту пользователя:
+pwd    # Посмотреть, где вы сейчас находитесь
+ls -la # Посмотреть содержимое текущей папки
+cd ~   # Перейти в домашнюю папку (чаще всего репозиторий создается здесь)
+git status # Проверка статуса
+
+# Установим имя и почту пользователя:
 git config --global user.name "<ваше_имя>"
 git config --global user.email "<адрес_почты@email.com>"
 ```
@@ -23,8 +28,6 @@ git clone https://github.com/user/repo.git
 ### Коммиты
 
 ```bash
-# Посмотреть статус
-git status
 
 # Добавить файлы
 git add filename.txt    # конкретный файл
@@ -34,7 +37,7 @@ git add .               # все файлы
 git commit -m "сообщение"
 
 # Отправить на GitHub
-git push origin main
+git push origin master
 ```
 
 | Команда | Описание | Пример |
