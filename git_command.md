@@ -64,6 +64,6 @@ git checkout -b feature/new-feature
 - `git log --oneline` - краткая история коммитов 📜
 - `git diff` - смотрю изменения перед коммитом 🔍
 
-```python
-print('Hello world')
+```bash
+git config --global user.name "<ваше_имя>"
 ```
