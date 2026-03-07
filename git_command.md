@@ -28,7 +28,6 @@ git clone https://github.com/user/repo.git
 ### Коммиты
 
 ```bash
-
 # Добавить файлы
 git add filename.txt    # конкретный файл
 git add .               # все файлы
@@ -66,3 +65,7 @@ git checkout -b feature/new-feature
 - `git status` - проверяю постоянно 👀
 - `git log --oneline` - краткая история коммитов 📜
 - `git diff` - смотрю изменения перед коммитом 🔍
+
+```python
+print('Hello world')
+```
