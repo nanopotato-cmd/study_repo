@@ -9,8 +9,9 @@ pwd    # Посмотреть, где вы сейчас находитесь
 ls -la # Посмотреть содержимое текущей папки
 cd ~   # Перейти в домашнюю папку (чаще всего репозиторий создается здесь)
 git status # Проверка статуса
+```
 
-# Установим имя и почту пользователя:
+```bash
 git config --global user.name "<ваше_имя>"
 git config --global user.email "<адрес_почты@email.com>"
 ```
@@ -18,11 +19,8 @@ git config --global user.email "<адрес_почты@email.com>"
 ### Работа с репозиторием
 
 ```bash
-# Создать новый репозиторий
-git init
-
-# Клонировать существующий
-git clone https://github.com/user/repo.git
+git init # Создать новый репозиторий
+git clone https://github.com/user/repo.git # Клонировать существующий
 ```
 
 ### Коммиты
