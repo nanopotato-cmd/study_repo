@@ -38,6 +38,20 @@
    my_dict = {'a': 1, 'b': 2}
    my_dict['c'] = 3   # {'a': 1, 'b': 2, 'c': 3}
    my_dict['a'] = 10  # {'a': 10, 'b': 2, 'c': 3}
+
+   person = {'name': 'Анна', 'age': 25, 'city': 'Москва'}
+
+   for key in my_dict:
+      print(key) #a, b
+
+   for key in my_dict:
+      print(my_dict[key]) #1, 2
+
+   for value in my_dict.values():
+      print(value) #1, 2
+
+   for key, value in my_dict.items():
+      print(f"{key}: {value}") #a: 1 b: 2
    ```
 
 3. **Множества (set)** - *Неупорядоченные коллекции уникальных элементов. Поддерживают математические операции над множествами.*
