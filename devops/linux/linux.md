@@ -203,7 +203,7 @@ lsmod                   # Список загруженных модулей
 modprobe module_name    # Загрузить модуль
 modprobe -r module_name # Выгрузить модуль
 modinfo module_name     # Информация о модуле
-
+```
 
 ## 7. Файловая система
 
