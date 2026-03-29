@@ -4,3 +4,5 @@
 - [SQL](SQL/SQL.md)
 - [Python](python/python.md)
 - [Linux](devops/linux/linux.md)
+- [DevOps](devops/devops.md)
+- [Docker](devops/docker/docker.md)
