@@ -42,11 +42,11 @@ Continuous Delivery гарантирует, что у вас всегда гот
 
 **Continuous Deployment (непрерывный деплой)** — это максимальное расширение Continuous Delivery. В этом случае каждая успешная сборка, прошедшая все стадии pipeline, автоматически деплоится в продакшн без ручного вмешательства. Например, изменение, которое разработчик закоммитил и которое прошло тесты, через несколько минут окажется в рабочей версии продукта для пользователей. Continuous Integration – это основа и необходимое условие для обеих практик доставки и развёртывания. Continuous Delivery включает в себя Continuous Integration и добавляет автоматизацию развёртывания на средах, а Continuous Deployment включает и Continuous Integration, и Delivery, делая релиз автоматическим по умолчанию.
 
-Continuous Integration (CI):
+Continuous Integration: 
 *Code --> Build --> Intefrate --> Test*
 
-Continuous Delivery:
+Continuous Delivery: 
 *Code --> Build --> Intefrate --> Test --> Realease*
 
-Continuous Deployment:
+Continuous Deployment: 
 *Code --> Build --> Intefrate --> Test --> Realease --> Deploy*
