@@ -3,7 +3,7 @@
 
 ## Основные технологии
 
-```marmeid
+```mermaid
 graph TB
     subgraph "Frontend Stack"
         HTML[HTML<br/>Структура]
@@ -52,7 +52,7 @@ graph TB
 
 ## Место Frontend в архитектуре
 
-```marmeid
+```mermaid
 graph LR
     subgraph "Клиентская сторона"
         A[Браузер] --> B[HTML]
