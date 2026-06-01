@@ -251,4 +251,12 @@ ubuntu@epdab3m2abgdhgqjm1go:~$ export YC_CLOUD_ID=$(yc config get cloud-id)
 ubuntu@epdab3m2abgdhgqjm1go:~$ export YC_FOLDER_ID=$(yc config get folder-id)
 ```
 
-### Инициализация проекта 
+### 8. Инициализация проекта 
+
+```bash
+ubuntu@epdab3m2abgdhgqjm1go:~/terraform_module3$ terraform init
+
+Terraform has been successfully initialized!
+
+ubuntu@epdab3m2abgdhgqjm1go:~/terraform_module3$
+...
