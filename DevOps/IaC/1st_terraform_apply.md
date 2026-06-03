@@ -351,3 +351,48 @@ terraform plan
 ```sh
 terraform apply
 ```
+
+### Работа с запущенной инфраструктурой и применение изменений
+
+Как мы помним, Terraform — идемпотентный инструмент. Это значит, что при повторном запуске `terraform apply` или `terraform plan` он покажет, что изменений нет:
+```sh
+ubuntu@epdab3m2abgdhgqjm1go:~/terraform_module3$ terraform plan
+yandex_compute_instance.vm-1: Refreshing state... [id=fhmo5gt56988u62edtpc]
+
+No changes. Your infrastructure matches the configuration.
+
+Terraform has compared your real infrastructure against your configuration and found no differences, so no changes are needed.
+```
+
+Измените параметр `nat` на значение `true` в файле `main.tf` и снова выполните `terraform apply`.
+
+Символ `~` означает `update in-place` (обновление на месте).
+
+```sh
+ubuntu@epdab3m2abgdhgqjm1go:~/terraform_module3$ terraform plan
+yandex_compute_instance.vm-1: Refreshing state... [id=fhmo5gt56988u62edtpc]
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  ~ update in-place
+
+Terraform will perform the following actions:
+
+  # yandex_compute_instance.vm-1 will be updated in-place
+  ~ resource "yandex_compute_instance" "vm-1" {
+        id                        = "fhmo5gt56988u62edtpc"
+        name                      = "lesson-terraform-s16137092"
+        # (16 unchanged attributes hidden)
+
+      ~ network_interface {
+          ~ nat                = false -> true
+            # (10 unchanged attributes hidden)
+        }
+
+        # (5 unchanged blocks hidden)
+    }
+```
+
+**Terraform умный**: он не пересоздаёт ресурс без необходимости. Если параметр можно изменить на лету (как `nat`), он делает **in-place update**. Только когда изменение требует пересоздания (например, смена зоны или образа), Terraform удалит старую ВМ и создаст новую.
+
+Это одно из ключевых преимуществ IaC — минимальный даунтайм при изменениях.
+
