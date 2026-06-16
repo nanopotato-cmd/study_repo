@@ -239,7 +239,7 @@ yc init --federation-id=bpfsvjbobkj5c5c46rht
 И проброс порта с локальной машины
 
 ```bash
-ssh -i C:\Users\maino\.ssh\key_IaC.txt -L 45343:127.0.0.1:45343 ubuntu@158.160.85.86
+ssh -i C:\Users\maino\.ssh\key_IaC.txt -L 39377:127.0.0.1:39377 ubuntu@158.160.85.86
 ```
 
 ### 7. Выписали воеменный токен и заполнили переменные окружения с токеном
