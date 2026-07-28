@@ -81,9 +81,13 @@
 Из одного образа можно запускать множество контейнеров
 
 `docker pull hello-world` - скачать образ
+
 `docker image ls hello-world` - убедиться, что образ появился в локальном кеше
+
 `docker run --name hello hello-world` - запуск контейнера
+
 `docker container rm hello` - удалить контейнер
+
 `docker image rm hello-world` - удалить образ с хоста
 
 
