@@ -331,6 +331,50 @@ http {
 `/api/orders` - Проксирует запросы на order-service
 `/` (фронтенд) - Отдаёт статику React-приложения
 
+```mermaid
+flowchart LR
+    subgraph Internet
+        User[👤 User]
+    end
+    
+    subgraph "Host Machine"
+        Port[🚪 :8888]
+    end
+    
+    subgraph "Docker Compose"
+        
+        subgraph "frontend-net 🔒"
+            FE[🖥️ frontend]
+            NG1[🔄 nginx]
+        end
+        
+        subgraph "backend-net 🔒"
+            NG2[🔄 nginx]
+            MS[🍕 menu-service ×2]
+            OS[📦 order-service ×2]
+        end
+        
+        subgraph "redis-net 🔒"
+            R1[🗄️ redis]
+            MS2[🍕 menu-service]
+            OS2[📦 order-service]
+        end
+    end
+    
+    User -->|HTTPS| Port
+    Port --> NG1
+    NG1 <--> FE
+    NG1 <--> NG2
+    NG2 <--> MS
+    NG2 <--> OS
+    MS <--> OS
+    MS <--> R1
+    OS <--> R1
+    
+    classDef secure fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    class frontend-net,backend-net,redis-net secure
+```
+
 ## ИТОГ
 
 | Компонент       | Что сделано                                                        |
@@ -352,3 +396,4 @@ http {
 | Internal network  | Сеть, доступная только внутри Docker, не наружу                         |
 | Secrets           | Конфиденциальные данные (пароли), не хранятся в коде                    |
 | Proxy_pass        | Перенаправление запроса на другой сервер                                |
+
