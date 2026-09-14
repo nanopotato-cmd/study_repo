@@ -1,0 +1,127 @@
+# Kubernetes (K8s)
+
+**Kubernetes** — это оркестратор контейнеров: система, которая автоматизирует развёртывание, масштабирование и управление контейнеризированными приложениями.
+
+**Зачем нужен:**
+- Управляет контейнерами на множестве хостов (кластер)
+- Автоматически восстанавливает упавшие Pod'ы
+- Балансирует нагрузку
+- Масштабирует приложения
+- Управляет обновлениями без простоя
+
+##  Архитектура кластера
+
+Кластер Kubernetes состоит из двух типов узлов:
+
+**🧠 Control Plane (Управляющий слой)** - "мозг" кластера. Принимает решения о том, где и что запускать
+
+| Компонент                 | Роль                                                                                       | Почему это важно для DevOps                                                                                          |
+|---------------------------|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| **kube-apiserver**        | Единая точка входа (REST API). Принимает команды от kubectl, CI/CD, веб-интерфейса.        | Все операции проходят через него. Масштабируется горизонтально за load balancer.                                     |
+| **etcd**                  | Распределённое Key-Value хранилище (на базе Raft). Хранит всё состояние кластера.          | Критичный компонент! Бэкапы etcd = бэкап всего кластера. Только apiserver пишет в etcd.                              |
+| **kube-scheduler**        | Решает, на какой узел запустить новый Pod (на основе CPU, RAM, affinity, taints).          | Можно писать кастомные scheduler'ы под специфичные задачи.                                                           |
+| **kube-controller-manager** | Набор контроллеров: Node Controller, Replication Controller, Endpoints Controller и др.  | Реализует логику «самоисцеления»: упал Pod → контроллер создаёт новый.                                               |
+| **cloud-controller-manager** | Интеграция с облачными провайдерами (AWS, GCP, Azure): балансировщики, volumes, nodes.   | Позволяет K8s управлять облачными ресурсами через API провайдера.                                                    |
+
+### Ключевые особенности
+- **Control Plane** не запускает пользовательские Pod'ы
+- Если Control Plane упал — кластер продолжает работать, но **нельзя управлять**
+- **etcd** — единственное stateful-хранилище в кластере
+
+**👷 Worker Nodes** - "руки" кластера. Здесь запускаются контейнеры.
+
+| Компонент             | Роль                                                                                                          | DevOps Notes                                                                                                                  |
+|-----------------------|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| **kubelet**           | Агент на каждом узле. Получает инструкции от API Server и управляет контейнерами через container runtime.     | «Страж» узла. Отправляет heartbeats. Если kubelet упал — нода становится `NotReady`.                                            |
+| **kube-proxy**        | Сетевой прокси. Реализует абстракцию Service: настраивает iptables/IPVS правила для маршрутизации трафика.    | Отвечает за L4 load balancing внутри кластера. Работает в режимах: iptables (default), ipvs, userspace.                        |
+| **Container Runtime** | ПО для запуска контейнеров: containerd, CRI-O, Docker (через shim).                                           | K8s общается через CRI (Container Runtime Interface). 
+| **Pod**               | Минимальная единица развёртывания. Один или несколько контейнеров с общими network/storage namespaces.        | Минимальный единица. Pod — это не контейнер! Pod может содержать sidecar-контейнеры (логирование, proxy)
+
+### Ключевые особенности
+- **Worker Nodes** не принимают решений — только выполняют
+- Каждая нода имеет **kubelet**, который общается с Control Plane
+- Если нода упала — Control Plane **пересоздаст** Pod'ы на других нодах
+
+```mermaid
+sequenceDiagram
+    participant User as Пользователь
+    participant API as kube-apiserver
+    participant ETCD as etcd
+    participant SCH as kube-scheduler
+    participant KUB as kubelet
+    participant CR as Container Runtime
+
+    User->>API: kubectl apply -f pod.yaml
+    API->>ETCD: Сохранить состояние
+    API->>SCH: Новый Pod в очереди
+    SCH->>API: Назначить ноду
+    API->>ETCD: Обновить Pod (nodeName)
+    API->>KUB: Запусти Pod на ноде
+    KUB->>CR: Создать контейнер
+    CR-->>KUB: Контейнер запущен
+    KUB-->>API: Pod Running
+    API->>ETCD: Обновить статус
+```
+Пошагово:
+
+1. **Пользователь** отправляет манифест через `kubectl`
+2. **kube-apiserver** принимает запрос и сохраняет в **etcd**
+3. **kube-scheduler** видит новый Pod и выбирает ноду
+4. **kube-apiserver** обновляет Pod с назначенной нодой
+5. **kubelet** на этой ноде получает команду
+6. **Container Runtime** создаёт контейнер
+7. **kubelet** сообщает статус обратно в **API Server**
+
+## 📦 Pod — минимальная единица
+Pod — это группа из одного или нескольких контейнеров, которые:
+- Работают на одной ноде
+- Разделяют сеть (один IP)
+- Разделяют тома (хранилище)
+- Запускаются и умирают вместе
+
+Стадии жизненного цикла Pod:
+
+| Стадия               | Что происходит                                                        |
+|----------------------|------------------------------------------------------------------------|
+| **Pending**          | Pod создан, но ещё не запущен (ждёт ноду, скачивает образ)            |
+| **ContainerCreating**| Контейнеры создаются                                                   |
+| **Running**          | Pod запущен, контейнеры работают                                       |
+| **Terminating**      | Pod удаляется                                                          |
+| **Succeeded**        | Все контейнеры завершились успешно (для Job)                           |
+| **Failed**           | Хотя бы один контейнер упал                                            |
+
+## Kubernetes Troubleshooting
+
+| #  | Проблема                                              | Компонент                              | Где проверять                                                                              | Возможные причины / действия                                                                                     |
+|----|-------------------------------------------------------|----------------------------------------|--------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| 1  | `kubectl` не отвечает, `connection refused` на :6443  | kube-apiserver                         | Логи API-сервера (`journalctl -u kube-apiserver`), статус пода/контейнера                  | Процесс упал, порт 6443 закрыт, сертификаты истекли, проблемы сети, ресурсы ноды                                 |
+| 2  | Высокая задержка при работе с `kubectl`               | kube-apiserver                         | Логи apiserver, нагрузка на CPU, размер etcd                                               | `kubectl` общается с API Server — если он тормозит, тормозит всё                                                 |
+| 3  | `kubectl` возвращает "connection refused"             | kube-apiserver / kubeconfig            | Проверить kubeconfig, статус apiserver                                                     | `kubectl` не может подключиться к API Server                                                                     |
+| 4  | Control Plane недоступен (все ноды `NotReady`)        | kube-apiserver / etcd / сеть           | Логи apiserver, etcd, `kubectl cluster-info`                                               | Без Control Plane кластер не управляется                                                                        |
+| 5  | Невозможность создавать Pod/Service, потеря конфигураций | etcd                                | Логи etcd, состояние кворума (`etcdctl endpoint status`), бэкапы                            | Недоступность кворума, диск переполнен, повреждение данных                                                       |
+| 6  | etcd тормозит / ошибки                                | etcd                                   | Логи etcd, размер БД, latency диска                                                        | etcd — хранилище всего состояния кластера                                                                        |
+| 7  | Новые поды остаются в `Pending`                       | kube-scheduler                         | `kubectl describe pod` (Events), ресурсы нод                                               | Недостаточно ресурсов (CPU/Memory), строгие affinity/anti-affinity, taints/tolerations mismatch                 |
+| 8  | Deployment не масштабируется, поды не восстанавливаются | kube-controller-manager              | Логи controller-manager, события в кластере, статус контроллеров                           | Контроллер не видит состояния через API Server, сбой компонента, ошибки конфигурации Deployment/ReplicaSet       |
+| 9  | Deployment не создаёт Pod'ы                           | kube-controller-manager                | Логи controller-manager, `kubectl describe deployment`                                     | Контроллеры создают ReplicaSet → Pod'ы                                                                           |
+| 10 | HPA не масштабирует                                   | metrics-server / HPA controller        | `kubectl get hpa`, `kubectl top pod`, логи metrics-server                                  | Нет метрик (metrics-server не работает) или неверные пороги                                                      |
+| 11 | Создание/удаление VM, балансировщиков, дисков не происходит | cloud-controller-manager          | Логи CCM, состояние облачных ресурсов                                                      | Проблемы с API облачного провайдера, неверные креды/токены, ошибки конфигурации cloud provider                   |
+| 12 | Node в состоянии `NotReady`                           | kubelet                                | `systemctl status kubelet`, логи kubelet, `kubectl get nodes`                              | Процесс упал, нехватка ресурсов, ошибки сети/сертификатов, storage pressure                                       |
+| 13 | Node не может присоединиться к кластеру               | kubelet                                | Логи kubelet, токен bootstrap, сертификаты                                                 | kubelet регистрируется через API Server                                                                          |
+| 14 | Pod не стартует, контейнеры падают                    | Container Runtime                      | Логи CRI (containerd / CRI-O), `docker ps` / `ctr` / `crictl ps`                           | Runtime не запущен, повреждён образ, проблемы cgroups или storage                                                |
+| 15 | Pod в `CrashLoopBackOff`                              | Container Runtime / приложение         | `kubectl logs`, `kubectl describe pod`                                                     | Контейнер запускается и сразу падает — проблема в приложении или runtime                                         |
+| 16 | OOMKilled (контейнер убит по памяти)                  | Container Runtime / cgroups            | `kubectl describe pod` (Reason: OOMKilled), `kubectl top pod`                              | Превышен memory limit → ядро убивает процесс                                                                     |
+| 17 | ImagePullBackOff / ErrImagePull                       | kubelet / Container Runtime            | `kubectl describe pod`, логи kubelet, доступность registry                                 | Неверный образ, нет доступа к registry, проблемы с imagePullSecrets                                             |
+| 18 | Pod evicted (вытеснен)                                | kubelet / ресурсы ноды                 | `kubectl describe pod`, `kubectl get events`, `df -h`, `free -m`                           | Нехватка ресурсов (disk pressure, memory pressure) → kubelet вытесняет поды                                      |
+| 19 | Pod не получает IP-адрес                              | CNI-плагин (kindnet, Calico, Cilium)   | Логи CNI, `kubectl describe pod` (события)                                                 | IP выдаёт CNI. Если CNI не работает — Pod'ы без сети                                                             |
+| 20 | Pod не может подключиться к другому Pod               | CNI-плагин / kube-proxy                | `kubectl exec` + ping/curl, логи CNI                                                       | Сеть между Pod'ами обеспечивает CNI                                                                              |
+| 21 | Network Policy блокирует трафик                       | CNI (Calico, Cilium)                   | `kubectl describe networkpolicy`, логи CNI                                                 | Network Policy может блокировать трафик между подами                                                            |
+| 22 | Service недоступен по ClusterIP / LoadBalancer        | kube-proxy                             | Логи kube-proxy, iptables/IPVS правила, CNI-плагины                                        | kube-proxy не работает, ошибки iptables/IPVS, конфликт CNI, маршрутизация сломана                                |
+| 23 | Service не балансирует трафик                         | kube-proxy / Endpoints                 | `kubectl get endpoints`, iptables/IPVS, логи kube-proxy                                    | Пустые Endpoints или сломанные правила → трафик не доходит до подов                                             |
+| 24 | DNS не работает внутри Pod                            | CoreDNS                                | Логи CoreDNS, `kubectl exec` + `nslookup`                                                  | CoreDNS — DNS-сервер кластера                                                                                    |
+| 25 | Ingress не маршрутизирует                             | Ingress Controller (nginx-ingress)     | Логи ingress-controller, `kubectl describe ingress`                                        | Ingress Controller обрабатывает HTTP-маршруты                                                                    |
+| 26 | PVC не может подключиться                             | StorageClass / CSI-драйвер             | `kubectl describe pvc`, логи CSI                                                           | PVC запрашивает PV через StorageClass                                                                            |
+| 27 | Pod не монтирует Volume                               | kubelet / CSI / StorageClass           | `kubectl describe pod`, логи CSI, `kubectl get pv,pvc`                                     | Ошибка монтирования, недоступность хранилища, неверный StorageClass                                             |
+| 28 | Secret не доступен / не монтируется в Pod             | kubelet / API Server / RBAC            | `kubectl describe pod`, права RBAC                                                         | API Server выдаёт Secret, RBAC контролирует доступ, kubelet монтирует в Pod                                     |
+| 29 | Сертификаты истекли                                   | kube-apiserver / kubelet / etcd        | `kubeadm certs check-expiration`, логи компонентов                                         | Истёкшие сертификаты → компоненты не могут общаться друг с другом                                               |
+| 30 | Часы на нодах расходятся                              | NTP / chrony                           | `timedatectl`, `chronyc tracking`                                                          | Рассинхрон времени ломает TLS и работу etcd                                                                      |
+| 31 | Node перезагружается / kernel panic                   | ОС ноды / hardware                     | `dmesg`, `journalctl -k`, логи системы                                                     | Аппаратные сбои, OOM на уровне ОС, проблемы с ядром                                                             |
