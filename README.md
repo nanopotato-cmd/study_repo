@@ -7,7 +7,7 @@
 - [Bash](DevOps/linux/bash.md)
 - [DevOps](DevOps/devops.md)
 - [Docker](DevOps/docker/docker.md)
-- [K8N](DevOps/K8N/K8N.md)
+- [K8s](DevOps/K8s/K8s.md)
 - [backend](backend/backend.md)
 - [frontend](frontend/frontend.md)
 - [OSI](DevOps/OSI.md)

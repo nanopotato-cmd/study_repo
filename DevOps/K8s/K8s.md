@@ -10,6 +10,50 @@
 - Управляет обновлениями без простоя
 
 ##  Архитектура кластера
+```mermaid
+graph TB
+    subgraph "🎛️ Control Plane (Master)"
+        API[🔷 API Server<br/>kube-apiserver]
+        ETCD[🗄️ etcd<br/>Key-Value Store]
+        SCH[📅 Scheduler<br/>kube-scheduler]
+        CM[🎮 Controller Manager<br/>kube-controller-manager]
+        
+        API <--> ETCD
+        SCH --> API
+        CM --> API
+    end
+    
+    subgraph "👷 Worker Nodes (Minions)"
+        subgraph "Node 1"
+            KUBELET1[🔷 Kubelet]
+            KPROXY1[🔄 Kube-proxy]
+            POD1[📦 Pod]
+            POD1_2[📦 Pod]
+            
+            KUBELET1 --> POD1
+            KUBELET1 --> POD1_2
+            KPROXY1 --> POD1
+        end
+        
+        subgraph "Node 2"
+            KUBELET2[🔷 Kubelet]
+            KPROXY2[🔄 Kube-proxy]
+            POD2[📦 Pod]
+            
+            KUBELET2 --> POD2
+            KPROXY2 --> POD2
+        end
+    end
+    
+    subgraph "👤 User / DevOps"
+        KUBECTL[kubectl apply -f deploy.yaml]
+    end
+    
+    KUBECTL -->|HTTPS| API
+    API -->|Watch| KUBELET1
+    API -->|Watch| KUBELET2
+    API -->|Assign| SCH
+```
 
 Кластер Kubernetes состоит из двух типов узлов:
 
@@ -52,6 +96,71 @@
 | **kube-proxy**        | Сетевой прокси. Реализует абстракцию Service: настраивает iptables/IPVS правила для маршрутизации трафика.    | Отвечает за L4 load balancing внутри кластера. Работает в режимах: iptables (default), ipvs, userspace.                        |
 | **Container Runtime** | ПО для запуска контейнеров: containerd, CRI-O, Docker (через shim).                                           | K8s общается через CRI (Container Runtime Interface). 
 | **Pod**               | Минимальная единица развёртывания. Один или несколько контейнеров с общими network/storage namespaces.        | Минимальный единица. Pod — это не контейнер! Pod может содержать sidecar-контейнеры (логирование, proxy)
+
+## 📦 Ключевые объекты Kubernetes (K8s Objects)
+```mermaid
+graph LR
+    subgraph "Workloads"
+        POD[📦 Pod]
+        DEPLOY[🚀 Deployment]
+        DS[⚙️ DaemonSet]
+        SS[📊 StatefulSet]
+        JOB[⏱️ Job/CronJob]
+    end
+    
+    subgraph "Networking"
+        SVC[🌐 Service]
+        ING[🚪 Ingress]
+        NP[🔒 NetworkPolicy]
+    end
+    
+    subgraph "Config & Storage"
+        CM[⚙️ ConfigMap]
+        SEC[🔐 Secret]
+        PV[💾 PersistentVolume]
+        PVC[🔗 PersistentVolumeClaim]
+    end
+    
+    DEPLOY --> POD
+    DS --> POD
+    SS --> POD
+    JOB --> POD
+    
+    SVC --> POD
+    ING --> SVC
+    
+    POD --> CM
+    POD --> SEC
+    POD --> PVC
+    PVC --> PV
+```
+
+### 🚀 Workloads (Что запускаем)
+
+| Объект         | Назначение                                                                                     | Use Case                                                              |
+|----------------|------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
+| **Pod**        | Минимальная единица. Контейнер(ы) + shared net/storage.                                         | Не создаётся напрямую, только через контроллеры.                      |
+| **Deployment** | Управление stateless-приложениями. Rolling updates, rollback, scaling.                          | Веб-сервисы, API, микросервисы.                                       |
+| **StatefulSet**| Управление stateful-приложениями. Стабильные имена, порядок запуска, sticky identity.           | Базы данных (PostgreSQL, Kafka), кластеры.                            |
+| **DaemonSet**  | Запуск Pod'а на каждой ноде (или по selector).                                                  | Лог-агенты (Fluentd), мониторинг (Node Exporter), CNI plugins.        |
+| **Job / CronJob** | Запуск задач до завершения (Job) или по расписанию (CronJob).                                | Бэкапы, миграции БД, периодические задачи.   
+
+### 🌐 Networking (Как соединяем)
+
+| Объект             | Назначение                                                                                                   | DevOps Notes                                                                                      |
+|--------------------|--------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| **Service**        | Стабильный IP/DNS для доступа к группе Pod'ов. Типы: `ClusterIP`, `NodePort`, `LoadBalancer`, `ExternalName`. | `ClusterIP` — внутренний, `LoadBalancer` — создаёт облачный LB.                                  |
+| **Ingress**        | L7 HTTP/HTTPS роутинг (host/path based). Работает через Ingress Controller (nginx, traefik, AWS ALB).         | Замена множеству Service'ов с `NodePort`. SSL termination здесь.                                 |
+| **NetworkPolicy**  | Firewall на уровне Pod'ов. Контроль входящего/исходящего трафика.                                             | По умолчанию всё разрешено. Нужно включить CNI с поддержкой netpol (Calico, Cilium).   
+
+### ⚙️ Config & Storage (Как конфигурируем и храним)
+
+| Объект                      | Назначение                                                                                              | Best Practice                                                                                              |
+|-----------------------------|----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| **ConfigMap**               | Хранение неконфиденциальных конфигураций (env vars, config files).                                       | Монтировать как volume или env. Изменения не всегда применяются автоматически.                              |
+| **Secret**                  | Хранение чувствительных данных (пароли, токены, TLS-ключи). Base64 encoded (⚠️ не шифрование!).           | Включить `encryption at rest` в etcd. Использовать external secret managers (Vault, AWS Secrets Manager).   |
+| **PersistentVolume (PV)**   | Абстракция физического хранилища (NFS, cloud disk, local).                                               | Admin создаёт PV, или динамическое выделение через `StorageClass`.                                          |
+| **PersistentVolumeClaim (PVC)** | Запрос на хранение от Pod'а («мне нужно 10 GiB»).                                                    | Pod монтирует PVC, K8s биндит PVC к подходящему PV.                                                        |
 
 ### Ключевые особенности
 - **Worker Nodes** не принимают решений — только выполняют
