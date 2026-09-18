@@ -11,7 +11,7 @@ Helm решает три задачи сразу: шаблонизирует м�
 
 Работу Helm удобно представить как цепочку преобразований — от описания приложения до его запуска в кластере:
 
-![alt text](image-3.png)
+![alt text](/pic/image-3.png)
 
 - Chart — исходное описание приложения.
 - Package — версия чарта для распространения.
@@ -153,4 +153,4 @@ Helm генерирует Kubernetes-манифесты и управляет и
 - `helm get manifest <release>` — просмотр Kubernetes-манифестов, которые Helm применил в кластере.
 - `helm uninstall <release>`— удаление релиза и всех связанных Kubernetes-ресурсов.
 
-![alt text](image-4.png)
+![alt text](/pic/image-4.png)
