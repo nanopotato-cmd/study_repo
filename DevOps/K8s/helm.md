@@ -152,3 +152,5 @@ Helm генерирует Kubernetes-манифесты и управляет и
 - `helm list`— просмотр всех релизов и их статуса.
 - `helm get manifest <release>` — просмотр Kubernetes-манифестов, которые Helm применил в кластере.
 - `helm uninstall <release>`— удаление релиза и всех связанных Kubernetes-ресурсов.
+
+![alt text](image-4.png)
