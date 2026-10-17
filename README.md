@@ -7,7 +7,9 @@
 ## 🏋️ Pet-проект
 
 - [**Sport Day**](sport_day.md) — production-ready приложение с полным DevOps-стеком
+
   *Живой сайт: [https://sport-day.ru](https://sport-day.ru)*
+  
   *Код: [GitLab](https://gitlab.com/mainofmind/sport_day)*
 
 ---
