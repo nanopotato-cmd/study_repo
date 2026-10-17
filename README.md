@@ -67,3 +67,7 @@
 
 - [DevOps](DevOps/devops.md)
 - [12 Factors](DevOps/optimisation_release_12Factors.md)
+
+---
+
+*База знаний обновляется по мере изучения новых тем.*
